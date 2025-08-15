@@ -5,22 +5,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Nécessaire pour find
+
       - uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
-      - run: |
-          BUILD_DIR=$(find . -name "gradlew" -exec dirname {} \; | head -1)
-          echo "Building in: $BUILD_DIR"
-          cd "$BUILD_DIR"
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-          echo "APK paths:"
-          find . -name "*.apk" || echo "::warning::No APK found"
-      - uses: actions/upload-artifact@v4
+
+      - name: Debug Project Structure
+        run: |
+          echo "Structure complète :"
+          find . -type d | sort
+          echo "Contenu de android/ :"
+          ls -la android/
+
+      - name: Build APK
+        run: |
+          if [ -f "android/gradlew" ]; then
+            cd android
+            chmod +x gradlew
+            ./gradlew clean assembleDebug --stacktrace
+            echo "APK généré :"
+            find "$PWD" -name "*.apk"
+          else
+            echo "::error::Fichier gradlew introuvable dans android/"
+            exit 1
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          name: magic-control-app
-          path: |
-            ${{ github.workspace }}/android/app/build/outputs/apk/debug/*.apk
-            ${{ github.workspace }}/*/app/build/outputs/apk/debug/*.apk
-            ${{ github.workspace }}/*/*/build/outputs/apk/debug/*.apk
+          name: app
+          path: android/app/build/outputs/apk/debug/*.apk
