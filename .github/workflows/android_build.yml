@@ -5,27 +5,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Find and Build
+      - name: Build APK (Méthode Ultra-Fiable)
         run: |
-          # Méthode qui a marché pour vous
-          GRADLE_DIR=$(find . -name "gradlew" -exec dirname {} \; | head -1)
-          echo "Dossier Gradle trouvé : $GRADLE_DIR"
-          cd "$GRADLE_DIR"
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-          echo "APK généré dans :"
-          find . -name "*.apk"
+          # 1. Trouve le dossier android (votre structure montre qu'il est à la racine)
+          if [ -d "android" ]; then
+            cd android
+            ./gradlew assembleDebug
+          else
+            # 2. Recherche approfondie si structure différente
+            GRADLE_DIR=$(find . -name "gradlew" -exec dirname {} \; | grep -v "node_modules" | head -1)
+            [ -z "$GRADLE_DIR" ] && { echo "::error::Aucun projet Gradle trouvé"; exit 1; }
+            cd "$GRADLE_DIR"
+          fi
+          
+          # 3. Build avec vérifications
+          chmod +x gradlew && ./gradlew assembleDebug --stacktrace
+          find . -name "*.apk" || echo "::warning::APK non généré"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: magic-control-app
+          name: app
           path: |
+            android/app/build/outputs/apk/debug/*.apk
             */build/outputs/apk/debug/*.apk
             */*/build/outputs/apk/debug/*.apk
