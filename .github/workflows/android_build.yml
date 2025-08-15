@@ -10,15 +10,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - run: |
-          find . -name "gradlew" -exec dirname {} \; | head -1 | xargs -I{} sh -c '
-            echo "Building in: {}"
-            cd {} && 
-            chmod +x gradlew && 
-            ./gradlew assembleDebug --stacktrace
-            echo "APK generated at:"
-            find . -name "*.apk"
-          '
+          BUILD_DIR=$(find . -name "gradlew" -exec dirname {} \; | head -1)
+          echo "Building in: $BUILD_DIR"
+          cd "$BUILD_DIR"
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+          echo "APK paths:"
+          find . -name "*.apk" || echo "::warning::No APK found"
       - uses: actions/upload-artifact@v4
         with:
           name: magic-control-app
-          path: "**/build/outputs/apk/debug/*.apk"  # Chemin corrigé ici
+          path: |
+            ${{ github.workspace }}/android/app/build/outputs/apk/debug/*.apk
+            ${{ github.workspace }}/*/app/build/outputs/apk/debug/*.apk
+            ${{ github.workspace }}/*/*/build/outputs/apk/debug/*.apk
