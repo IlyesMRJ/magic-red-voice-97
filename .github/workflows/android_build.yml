@@ -11,28 +11,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build APK (Méthode Ultra-Fiable)
+      - name: Build APK
         run: |
-          # 1. Trouve le dossier android (votre structure montre qu'il est à la racine)
-          if [ -d "android" ]; then
-            cd android
-            ./gradlew assembleDebug
-          else
-            # 2. Recherche approfondie si structure différente
-            GRADLE_DIR=$(find . -name "gradlew" -exec dirname {} \; | grep -v "node_modules" | head -1)
-            [ -z "$GRADLE_DIR" ] && { echo "::error::Aucun projet Gradle trouvé"; exit 1; }
-            cd "$GRADLE_DIR"
-          fi
-          
-          # 3. Build avec vérifications
-          chmod +x gradlew && ./gradlew assembleDebug --stacktrace
-          find . -name "*.apk" || echo "::warning::APK non généré"
+          cd android
+          chmod +x gradlew
+          ./gradlew clean assembleDebug --stacktrace --no-daemon
+          echo "APK généré :"
+          find . -name "*.apk" || echo "::error::Aucun APK généré"
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app
-          path: |
-            android/app/build/outputs/apk/debug/*.apk
-            */build/outputs/apk/debug/*.apk
-            */*/build/outputs/apk/debug/*.apk
+          name: magic-control-app
+          path: android/app/build/outputs/apk/debug/*.apk
