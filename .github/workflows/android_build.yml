@@ -10,8 +10,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - run: |
-          find . -name "gradlew" -exec dirname {} \; | head -1 | xargs -I{} sh -c 'cd {} && chmod +x gradlew && ./gradlew assembleDebug'
+          ANDROID_DIR=$(find . -name "build.gradle" -exec dirname {} \; | grep -v "node_modules" | head -1)
+          cd "$ANDROID_DIR"
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+          echo "APK généré à :"
+          find . -name "*.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: app
-          path: "**/apk/debug/*.apk"
+          name: app-debug
+          path: |
+            */build/outputs/apk/debug/*.apk
+            */*/build/outputs/apk/debug/*.apk
